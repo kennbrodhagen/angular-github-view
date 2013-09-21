@@ -29,17 +29,20 @@ module.exports = function (grunt) {
   grunt.initConfig({
     yeoman: yeomanConfig,
     watch: {
-      coffee: {
-        files: ['<%= yeoman.app %>/scripts/{,*/}*.coffee'],
-        tasks: ['coffee:dist']
+      js: {
+        files: ['<%= yeoman.app %>/scripts/{,*/}*.js'],
+        tasks: ['test'],
+        options: {atBegin: true}
       },
-      coffeeTest: {
-        files: ['test/spec/{,*/}*.coffee'],
-        tasks: ['coffee:test']
+      jsTest: {
+        files: ['test/spec/{,*/}*.js'],
+        tasks: ['test'],
+        options: {atBegin: true}
       },
       styles: {
         files: ['<%= yeoman.app %>/styles/{,*/}*.css'],
-        tasks: ['copy:styles', 'autoprefixer']
+        tasks: ['copy:styles', 'autoprefixer'],
+        options: {atBegin: true}
       },
       livereload: {
         options: {
@@ -315,6 +318,9 @@ module.exports = function (grunt) {
       }
     }
   });
+
+  // Automatic notifications when tasks fail.
+  grunt.loadNpmTasks('grunt-notify');
 
   grunt.registerTask('server', function (target) {
     if (target === 'dist') {

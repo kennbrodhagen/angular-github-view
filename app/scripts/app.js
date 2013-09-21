@@ -5,7 +5,7 @@ angular.module('githubViewApp', [])
     $routeProvider
       .when('/', {
         templateUrl: 'views/main.html',
-        controller: 'MainCtrl'
+        controller: 'AngularRepoCtrl'
       })
       .otherwise({
         redirectTo: '/'

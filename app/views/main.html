@@ -1,9 +1,21 @@
-<div class="hero-unit">
-  <h1>'Allo, 'Allo!</h1>
-  <p>You now have</p>
-  <ul>
-      <li ng-repeat="thing in awesomeThings">{{thing}}</li>
-  </ul>
-  <p>installed.</p>
-  <h3>Enjoy coding! - Yeoman</h3>
+<div class="well">
+    <h3>Angular Github Repo Content</h3>
+    <table class="table table-bordered table-condensed">
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+        </tr>
+        <tr>
+            <td>foo.js</td>
+            <td>file</td>
+        </tr>
+        <tr>
+            <td>bar</td>
+            <td>dir</td>
+        </tr>
+        <tr ng-repeat="item in repoContent">
+            <td>{{item.name}}</td>
+            <td>{{item.type}}</td>
+        </tr>
+    </table>
 </div>
