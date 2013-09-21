@@ -41,8 +41,9 @@ describe('Controller: AngularRepoCtrl', function () {
     // load the controller's module
     beforeEach(module('githubViewApp'));
 
-    var EXPECTED_CONTENT = 'EXPECTED_CONTENT';
+    var EXPECTED_CONTENT = [{name:'EXPECTED_CONTENT'}];
     var AngularRepoCtrl,
+    mockAngularRepo,
     scope;
 
     // Initialize the controller and a mock scope
@@ -53,7 +54,7 @@ describe('Controller: AngularRepoCtrl', function () {
         scope = $rootScope.$new();
 
         // Setup a mock angularRepo service
-        var mockAngularRepo = jasmine.createSpyObj('angularRepo', ['content']);
+        mockAngularRepo = jasmine.createSpyObj('angularRepo', ['content']);
         mockAngularRepo.content.andReturn(EXPECTED_CONTENT);
 
         // Inject our mock into the controller via the options
@@ -64,7 +65,14 @@ describe('Controller: AngularRepoCtrl', function () {
         });
     }));
 
-    it('should attach a list of awesomeThings to the scope', function () {
+    it('should populate the repoContent collection', function () {
         expect(scope.repoContent).toBe(EXPECTED_CONTENT);
+    });
+
+    it('should provide an action to choose a dir type item to open', function() {
+        mockAngularRepo.content.reset();
+        scope.chooseContent(scope.repoContent[0]);
+        expect(mockAngularRepo.content)
+            .toHaveBeenCalledWith(scope.repoContent[0].name);
     });
 });

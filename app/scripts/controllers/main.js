@@ -15,5 +15,10 @@ angular.module('githubViewApp')
     .controller('AngularRepoCtrl', ['$scope', 'angularRepo', 
         function ($scope, angularRepo) {
 
-        $scope.repoContent = angularRepo.content();
+        $scope.chooseContent = function(item) {
+            var name = !!item ? item.name : null;
+            $scope.repoContent = angularRepo.content(name);
+        };
+
+        $scope.chooseContent();
     }]);
