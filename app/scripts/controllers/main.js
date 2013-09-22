@@ -1,24 +1,61 @@
 'use strict';
 
 angular.module('githubViewApp')
-    .factory('angularRepo', ['$http', function($http) {
+    .factory('angularRepo', ['$http', '$q', function($http, $q) {
+        var REPO_ROOT = 'https://api.github.com/repos/angular/angular.js/contents/';
+
+        // create an Item object fromt he api response
+        // extend the api response and add a function to get
+        // child content objects.
+        var createItemFromResponse = function(itemResponse) {
+            return angular.extend({
+                contents: function() {
+                    if (this.type === 'dir')
+                        return load(this.url);
+                    else
+                        return $q.when([]);
+                }
+            }, itemResponse);
+        };
+
+        // Transform http response of items into an array of
+        // item objects.
+        var createItemsFromResponse = function(response) {
+            var result = [];
+            angular.forEach(response.data, function(itemResponse) {
+                result.push(createItemFromResponse(itemResponse));
+            });
+            return result;
+        };
+
+        // Helper function to load a url
+        // and pipe output through createItems
+        var load = function(url) {
+            return $http.get(url)
+                .then(createItemsFromResponse);
+        };
+
+        // angularRepo object
         return {
-            content: function() {
-                return $http
-                    .get('https://api.github.com/repos/angular/angular.js/contents/')
-                    .then(function(response) {
-                        return response.data;
-                    });
+            REPO_ROOT: REPO_ROOT,
+            createItem: createItemFromResponse,
+            rootItem: function() {
+                return  {
+                    contents: function() {
+                        return load(REPO_ROOT);
+                    },
+                    hasContents: true,
+                    name: '/'
+                };
             }
         };
     }])
     .controller('AngularRepoCtrl', ['$scope', 'angularRepo', 
         function ($scope, angularRepo) {
 
-        $scope.chooseContent = function(item) {
-            var name = !!item ? item.name : null;
-            $scope.repoContent = angularRepo.content(name);
+        $scope.viewContent = function(item) {
+            $scope.repoContent = item.contents();
         };
 
-        $scope.chooseContent();
+        $scope.repoContent = angularRepo.rootItem().contents();
     }]);

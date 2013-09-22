@@ -5,16 +5,13 @@
             <th>Name</th>
             <th>Type</th>
         </tr>
-        <tr>
-            <td>foo.js</td>
-            <td>file</td>
-        </tr>
-        <tr>
-            <td>bar</td>
-            <td>dir</td>
-        </tr>
         <tr ng-repeat="item in repoContent">
-            <td>{{item.name}}</td>
+            <td ng-switch="item.type">
+                <div ng-switch-when="dir">
+                    <a href="" ng-click="viewContent(item)">{{item.name}}</a>
+                </div>
+                <div ng-switch-default>{{item.name}}</div>
+            </td>
             <td>{{item.type}}</td>
         </tr>
     </table>

@@ -1,50 +1,134 @@
 describe('Service: angularRepo', function() {
+    'use strict';
+
+
+    var $httpBackend;
+    var angularRepo;
+    var promises;
+
+    // Helper function to wrap the logic of testing that raw
+    // api content has been transformed to item objects
+    // correctly.  For now we test the array sizes match and
+    // that the the first item has a contents function.
+    var assertContentMatches = function(provided, expected) {
+        expect(provided.length).toEqual(expected.length);
+        expect(provided[0].contents().then).toBeDefined();
+    };
+
+    // before each service test we will initialize the module
+    // and capture our injected dependencies.
     beforeEach(function() {
         module('githubViewApp');
-    });
-
-    it('* Fetches the content of the repo from a particular url and returns it as a promise', function() {
-        // I like inject to be broken out so it's easier to 
-        // move around if we need to.
-        inject(function($httpBackend, angularRepo) {
-            // Declare the test content we will mock deliver
-            // and expect to see.
-            var EXPECTED_CONTENT = [
-                    {name:'foo', type:'file'}, 
-                    {name:'bar', type:'dir'}];
-
-            // Tell the mock http to expect this URL to be called.
-            // Have it respond with our test content.
-            $httpBackend.expectGET(
-                'https://api.github.com/repos/angular/angular.js/contents/')
-                .respond(200, EXPECTED_CONTENT);
-
-            // Perform the operation we are testing.
-            angularRepo.content().then(function(content) {
-                contentProvided = content;
-            });
-
-            // Trigger the async http response to fire and
-            // call our callback.
-            $httpBackend.flush();
-
-            // Assert our expectation that we saw the content
-            // we had the http provide.
-            expect(contentProvided).toEqual(EXPECTED_CONTENT);
+        inject(function(_$httpBackend_, $rootScope, _angularRepo_) {
+            $httpBackend = _$httpBackend_;
+            angularRepo = _angularRepo_;
+            promises = $rootScope;
         });
     });
+
+    it('* provides a root node of content for the repo.', function() {
+        // Tell the mock http to expect this URL to be called.
+        // Have it respond with our test content.
+        var EXPECTED_CONTENT = [
+                {name:'foo', type:'file'},
+                {name:'bar', type:'dir'}];
+        $httpBackend.expectGET(
+            angularRepo.REPO_ROOT)
+            .respond(200, EXPECTED_CONTENT);
+
+        // Perform the operation we are testing.
+        var contentProvided;
+        angularRepo.rootItem().contents().then(function(content) {
+            contentProvided = content;
+        });
+
+        // Trigger the async http response to fire and
+        // call our callback.
+        $httpBackend.flush();
+
+        // Assert our expectation that we saw the content
+        // we had the http provide.
+        assertContentMatches(contentProvided, EXPECTED_CONTENT);
+    });
+
+    describe('* repo contains file and dir type items', function() {
+        describe('* file type item', function() {
+            var FILE_RESPONSE = {
+                name: 'item_name',
+                type: 'file'
+            };
+            var item;
+
+            beforeEach(function() {
+                item = angularRepo.createItem(FILE_RESPONSE);
+            });
+
+
+            it('* has name, type, and contents', function() {
+                expect(item.name).toEqual(FILE_RESPONSE.name);
+                expect(item.type).toEqual(FILE_RESPONSE.type);
+                expect(item.contents).toBeDefined();
+            });
+
+            it('* contents returns a promise to empty array', function() {
+                var callback = jasmine.createSpy('callback');
+                item.contents().then(callback);
+                promises.$apply();
+                expect(callback).toHaveBeenCalledWith([]);
+            });
+
+        });
+
+        describe('* dir type item', function() {
+            var DIR_RESPONSE = {
+                name: 'item_name',
+                type: 'dir',
+                url: 'http://item.response.url/'
+            };
+            var CONTENT_RESPONSE = [
+                {name: 'file1', type:'file'},
+                {name: 'dir1', type:'dir', url:'/dir1'}
+            ];
+
+            var item;
+
+            it('* calls the api to get contents list', function() {
+                item = angularRepo.createItem(DIR_RESPONSE);
+
+                $httpBackend
+                    .expectGET(DIR_RESPONSE.url)
+                    .respond(200, CONTENT_RESPONSE);
+                var actualContents;
+                item.contents().then(function(contents) {
+                    actualContents = contents;
+                });
+                $httpBackend.flush();
+
+                assertContentMatches(actualContents, CONTENT_RESPONSE);
+            });
+        });
+
+    });
+
 });
 
 describe('Controller: AngularRepoCtrl', function () {
     'use strict';
 
-    // load the controller's module
-    beforeEach(module('githubViewApp'));
+    var ITEM_CONTENTS = [
+        {name: 'foo', type:'file'},
+        {name: 'bar', type:'dir'}
+    ];
+    var ROOT_CONTENTS = [
+        {name: 'item', contents: jasmine.createSpy('contents')
+            .andReturn(ITEM_CONTENTS)}];
 
-    var EXPECTED_CONTENT = [{name:'EXPECTED_CONTENT'}];
     var AngularRepoCtrl,
     mockAngularRepo,
     scope;
+
+    // load the controller's module
+    beforeEach(module('githubViewApp'));
 
     // Initialize the controller and a mock scope
     beforeEach(inject(function ($controller, $rootScope) {
@@ -54,8 +138,12 @@ describe('Controller: AngularRepoCtrl', function () {
         scope = $rootScope.$new();
 
         // Setup a mock angularRepo service
-        mockAngularRepo = jasmine.createSpyObj('angularRepo', ['content']);
-        mockAngularRepo.content.andReturn(EXPECTED_CONTENT);
+        mockAngularRepo = jasmine.createSpyObj('angularRepo', ['rootItem']);
+        mockAngularRepo.rootItem.andReturn({
+            contents: function() {
+                return ROOT_CONTENTS;
+            }
+        });
 
         // Inject our mock into the controller via the options
         // hash
@@ -65,14 +153,15 @@ describe('Controller: AngularRepoCtrl', function () {
         });
     }));
 
-    it('should populate the repoContent collection', function () {
-        expect(scope.repoContent).toBe(EXPECTED_CONTENT);
+    it('should populate repoContent with root contents', function () {
+        expect(scope.repoContent).toBe(ROOT_CONTENTS);
     });
 
     it('should provide an action to choose a dir type item to open', function() {
-        mockAngularRepo.content.reset();
-        scope.chooseContent(scope.repoContent[0]);
-        expect(mockAngularRepo.content)
-            .toHaveBeenCalledWith(scope.repoContent[0].name);
+        var item = scope.repoContent[0];
+        scope.viewContent(item);
+
+        expect(item.contents).toHaveBeenCalled();
+        expect(scope.repoContent).toBe(ITEM_CONTENTS);
     });
 });
