@@ -1,18 +1,4 @@
 <div class="well">
     <h3>Angular Github Repo Content</h3>
-    <table class="table table-bordered table-condensed">
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-        </tr>
-        <tr ng-repeat="item in repoContent">
-            <td ng-switch="item.type">
-                <div ng-switch-when="dir">
-                    <a href="" ng-click="viewContent(item)">{{item.name}}</a>
-                </div>
-                <div ng-switch-default>{{item.name}}</div>
-            </td>
-            <td>{{item.type}}</td>
-        </tr>
-    </table>
+    <github-repo-view action="viewContent" content="repoContent"/>
 </div>

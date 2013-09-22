@@ -165,3 +165,43 @@ describe('Controller: AngularRepoCtrl', function () {
         expect(scope.repoContent).toBe(ITEM_CONTENTS);
     });
 });
+
+describe('* Directive', function() {
+    'use strict';
+
+    var FILE_ITEM = {name: 'file-item', type: 'file'};
+    var DIR_ITEM = {name: 'dir-item', type: 'dir'};
+
+    var directive;
+    var scope;
+    // load the controller's module
+    beforeEach(module('githubViewApp'));
+
+    // Initialize the controller and a mock scope
+    beforeEach(inject(function ($compile, $rootScope) {
+        // A directive is compiled from template html 
+        // and linked to a scope
+        var html = '<github-content-item item="item" action="action"/>';
+        scope = $rootScope.$new();
+        scope.item = FILE_ITEM;
+        scope.action = jasmine.createSpy('action');
+
+        directive = $compile(html)(scope);
+        directive.scope().$digest();
+
+        /*
+        directive = angular.element(html);
+        var compiled = $compile(directive);
+
+        compiled(scope);
+        scope.$digest();
+        */
+    }));
+
+    it('* tests something', function() {
+        expect(directive.find('a').text())
+            .toEqual(FILE_ITEM.name);
+    });
+
+
+});

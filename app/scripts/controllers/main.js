@@ -54,8 +54,37 @@ angular.module('githubViewApp')
         function ($scope, angularRepo) {
 
         $scope.viewContent = function(item) {
+            console.log('viewContent', item);
             $scope.repoContent = item.contents();
         };
 
         $scope.repoContent = angularRepo.rootItem().contents();
-    }]);
+    }])
+    .directive('githubRepoView', function() {
+        var html =
+              '<table class="table table-bordered table-condensed">'
+            + '    <tr>'
+            + '        <th>Name</th>'
+            + '        <th>Type</th>'
+            + '    </tr>'
+            + '    <tr ng-repeat="item in content">'
+            + '        <td ng-switch="item.type">'
+            + '            <a href="" ng-switch-when="dir" ng-click="action(item)">'
+            + '                {{item.name}}'
+            + '            </a>'
+            + '            <div ng-switch-default>{{item.name}}</div>'
+            + '         </td>'
+            + '         <td>{{item.type}}</td>'
+            + '     </tr>'
+            + '</table>';
+
+        return {
+            restrict: 'E',
+            scope: {
+                action: '=',
+                content: '='
+            },
+            template: html
+        };
+    });
+
