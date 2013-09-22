@@ -1,4 +1,4 @@
-describe('Controller: AngularRepoCtrl', function () {
+describe('* Controller: AngularRepoCtrl', function () {
     'use strict';
 
     var ITEM_CONTENTS = [
@@ -7,7 +7,8 @@ describe('Controller: AngularRepoCtrl', function () {
     ];
     var ROOT_CONTENTS = [
         {name: 'item', contents: jasmine.createSpy('contents')
-            .andReturn(ITEM_CONTENTS)}];
+            .andReturn(ITEM_CONTENTS)}
+    ];
 
     var AngularRepoCtrl,
     mockAngularRepo,
@@ -24,7 +25,9 @@ describe('Controller: AngularRepoCtrl', function () {
         scope = $rootScope.$new();
 
         // Setup a mock angularRepo service
-        mockAngularRepo = jasmine.createSpyObj('angularRepo', ['rootItem', 'refresh']);
+        mockAngularRepo = jasmine
+            .createSpyObj('angularRepo', 
+                ['rootItem', 'refresh']);
         mockAngularRepo.rootItem.andReturn({
             contents: function() {
                 return ROOT_CONTENTS;
@@ -162,7 +165,6 @@ describe('Service: angularRepo', function() {
                 item = angularRepo.createItem(FILE_RESPONSE);
             });
 
-
             it('* has name, type, and contents', function() {
                 expect(item.name).toEqual(FILE_RESPONSE.name);
                 expect(item.type).toEqual(FILE_RESPONSE.type);
@@ -175,7 +177,6 @@ describe('Service: angularRepo', function() {
                 promises.$apply();
                 expect(callback).toHaveBeenCalledWith([]);
             });
-
         });
 
         describe('* dir type item', function() {
@@ -206,9 +207,7 @@ describe('Service: angularRepo', function() {
                 assertContentMatches(actualContents, CONTENT_RESPONSE);
             });
         });
-
     });
-
 });
 
 describe('* Directive', function() {
@@ -250,6 +249,4 @@ describe('* Directive', function() {
         $(anchor).click();
         expect(scope.action).toHaveBeenCalledWith(DIR_ITEM);
     });
-
-
 });
