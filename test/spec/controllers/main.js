@@ -1,9 +1,83 @@
+describe('Controller: AngularRepoCtrl', function () {
+    'use strict';
+
+    var ITEM_CONTENTS = [
+        {name: 'foo', type:'file'},
+        {name: 'bar', type:'dir'}
+    ];
+    var ROOT_CONTENTS = [
+        {name: 'item', contents: jasmine.createSpy('contents')
+            .andReturn(ITEM_CONTENTS)}];
+
+    var AngularRepoCtrl,
+    mockAngularRepo,
+    scope;
+
+    // load the controller's module
+    beforeEach(module('githubViewApp'));
+
+    // Initialize the controller and a mock scope
+    beforeEach(inject(function ($controller, $rootScope) {
+        // Create a new scope object to inject.
+        // Controllers need a specially created scope with all
+        // the extra methods available
+        scope = $rootScope.$new();
+
+        // Setup a mock angularRepo service
+        mockAngularRepo = jasmine.createSpyObj('angularRepo', ['rootItem', 'refresh']);
+        mockAngularRepo.rootItem.andReturn({
+            contents: function() {
+                return ROOT_CONTENTS;
+            }
+        });
+
+        // Inject our mock into the controller via the options
+        // hash
+        AngularRepoCtrl = $controller('AngularRepoCtrl', {
+            $scope: scope,
+            angularRepo: mockAngularRepo
+        });
+    }));
+
+    it('should register to refresh content', function() {
+        expect(mockAngularRepo.refresh).toHaveBeenCalled();
+    });
+
+    it('should populate repoContent with root contents', function () {
+        expect(scope.repoContent).toBe(ROOT_CONTENTS);
+    });
+
+    it('should provide an action to choose a dir type item to open', function() {
+        var item = scope.repoContent[0];
+        scope.viewContent(item);
+
+        expect(item.contents).toHaveBeenCalled();
+        expect(scope.repoContent).toBe(ITEM_CONTENTS);
+    });
+
+    it('should watch the repoContent value and increment a counter on each change', function() {
+        // scope.$apply() will trigger watches
+        // set a baseline for watch changes by setting
+        // repoContent, then applying & resetting our count.
+        scope.repoContent = null;
+        scope.$apply();
+        scope.repoChanges = 0;
+
+        // Now change repoContent and $apply()
+        // the change should be picked up by our watcher
+        // which will trigger the counter to increment
+        scope.repoContent = [];
+        scope.$apply();
+        expect(scope.repoChanges).toEqual(1);
+    });
+});
+
 describe('Service: angularRepo', function() {
     'use strict';
 
-
     var $httpBackend;
     var angularRepo;
+    var mockTimeout;
     var promises;
 
     // Helper function to wrap the logic of testing that raw
@@ -12,13 +86,20 @@ describe('Service: angularRepo', function() {
     // that the the first item has a contents function.
     var assertContentMatches = function(provided, expected) {
         expect(provided.length).toEqual(expected.length);
-        expect(provided[0].contents().then).toBeDefined();
+        expect(provided[0].contents)
+            .toEqual(jasmine.any(Function));
     };
 
     // before each service test we will initialize the module
     // and capture our injected dependencies.
     beforeEach(function() {
-        module('githubViewApp');
+        module('githubViewApp', function($provide) {
+            mockTimeout = jasmine.createSpy('timeout')
+                .andCallFake( function(callback, time) {
+                    mockTimeout.apply = callback;
+            });
+            $provide.value('$timeout', mockTimeout);
+        });
         inject(function(_$httpBackend_, $rootScope, _angularRepo_) {
             $httpBackend = _$httpBackend_;
             angularRepo = _angularRepo_;
@@ -49,6 +130,24 @@ describe('Service: angularRepo', function() {
         // Assert our expectation that we saw the content
         // we had the http provide.
         assertContentMatches(contentProvided, EXPECTED_CONTENT);
+    });
+
+    it('* automatically refreshes', function() {
+        var refresh = jasmine.createSpy('refresh');
+
+        angularRepo.refresh(refresh);
+
+        expect(mockTimeout)
+            .toHaveBeenCalledWith(jasmine.any(Function), 15000);
+
+        var EXPECTED_CONTENT = [
+                {name:'foo', type:'file'},
+                {name:'bar', type:'dir'}];
+        $httpBackend.expectGET(angularRepo.REPO_ROOT)
+            .respond(200, EXPECTED_CONTENT);
+        mockTimeout.apply();
+        $httpBackend.flush();
+        expect(refresh).toHaveBeenCalled();
     });
 
     describe('* repo contains file and dir type items', function() {
@@ -110,60 +209,6 @@ describe('Service: angularRepo', function() {
 
     });
 
-});
-
-describe('Controller: AngularRepoCtrl', function () {
-    'use strict';
-
-    var ITEM_CONTENTS = [
-        {name: 'foo', type:'file'},
-        {name: 'bar', type:'dir'}
-    ];
-    var ROOT_CONTENTS = [
-        {name: 'item', contents: jasmine.createSpy('contents')
-            .andReturn(ITEM_CONTENTS)}];
-
-    var AngularRepoCtrl,
-    mockAngularRepo,
-    scope;
-
-    // load the controller's module
-    beforeEach(module('githubViewApp'));
-
-    // Initialize the controller and a mock scope
-    beforeEach(inject(function ($controller, $rootScope) {
-        // Create a new scope object to inject.
-        // Controllers need a specially created scope with all
-        // the extra methods available
-        scope = $rootScope.$new();
-
-        // Setup a mock angularRepo service
-        mockAngularRepo = jasmine.createSpyObj('angularRepo', ['rootItem']);
-        mockAngularRepo.rootItem.andReturn({
-            contents: function() {
-                return ROOT_CONTENTS;
-            }
-        });
-
-        // Inject our mock into the controller via the options
-        // hash
-        AngularRepoCtrl = $controller('AngularRepoCtrl', {
-            $scope: scope,
-            angularRepo: mockAngularRepo
-        });
-    }));
-
-    it('should populate repoContent with root contents', function () {
-        expect(scope.repoContent).toBe(ROOT_CONTENTS);
-    });
-
-    it('should provide an action to choose a dir type item to open', function() {
-        var item = scope.repoContent[0];
-        scope.viewContent(item);
-
-        expect(item.contents).toHaveBeenCalled();
-        expect(scope.repoContent).toBe(ITEM_CONTENTS);
-    });
 });
 
 describe('* Directive', function() {

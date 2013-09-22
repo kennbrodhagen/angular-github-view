@@ -1,7 +1,25 @@
 'use strict';
 
 angular.module('githubViewApp')
-    .factory('angularRepo', ['$http', '$q', function($http, $q) {
+    .controller('AngularRepoCtrl', ['$scope', 'angularRepo', 
+        function ($scope, angularRepo) {
+
+        $scope.viewContent = function(item) {
+            $scope.repoContent = item.contents();
+        };
+
+        $scope.repoChanges = 0;
+        $scope.repoContent = angularRepo.rootItem().contents();
+        angularRepo.refresh(function(content) {
+            console.log('refresh');
+            $scope.repoContent = content;
+        });
+
+        $scope.$watch('repoContent', function() {
+            $scope.repoChanges++;
+        });
+    }])
+    .factory('angularRepo', ['$http', '$q', '$timeout', function($http, $q, $timeout) {
         var REPO_ROOT = 'https://api.github.com/repos/angular/angular.js/contents/';
 
         // create an Item object fromt he api response
@@ -35,10 +53,23 @@ angular.module('githubViewApp')
                 .then(createItemsFromResponse);
         };
 
-        // angularRepo object
+        var refreshCommand = function(callback) {
+            return function() {
+                return $timeout(function() {
+                    load(REPO_ROOT)
+                        .then(callback)
+                        .then(refreshCommand(callback));
+                }, 15000);
+            };
+        };
+
+        // angularRepo service object
         return {
             REPO_ROOT: REPO_ROOT,
             createItem: createItemFromResponse,
+            refresh: function(callback) {
+                return refreshCommand(callback)();
+            },
             rootItem: function() {
                 return  {
                     contents: function() {
@@ -49,16 +80,6 @@ angular.module('githubViewApp')
                 };
             }
         };
-    }])
-    .controller('AngularRepoCtrl', ['$scope', 'angularRepo', 
-        function ($scope, angularRepo) {
-
-        $scope.viewContent = function(item) {
-            console.log('viewContent', item);
-            $scope.repoContent = item.contents();
-        };
-
-        $scope.repoContent = angularRepo.rootItem().contents();
     }])
     .directive('githubRepoView', function() {
         var html =
