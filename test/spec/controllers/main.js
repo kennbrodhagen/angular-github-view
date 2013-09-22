@@ -179,28 +179,31 @@ describe('* Directive', function() {
 
     // Initialize the controller and a mock scope
     beforeEach(inject(function ($compile, $rootScope) {
-        // A directive is compiled from template html 
-        // and linked to a scope
-        var html = '<github-content-item item="item" action="action"/>';
+        // compile our directive using a simple template
+        // and link it to a scope
+        var html = '<github-repo-view action="action" content="content"/>';
         scope = $rootScope.$new();
-        scope.item = FILE_ITEM;
+        scope.content = [FILE_ITEM, DIR_ITEM];
         scope.action = jasmine.createSpy('action');
 
         directive = $compile(html)(scope);
         directive.scope().$digest();
-
-        /*
-        directive = angular.element(html);
-        var compiled = $compile(directive);
-
-        compiled(scope);
-        scope.$digest();
-        */
     }));
 
-    it('* tests something', function() {
+    it('* presents the dir item in an anchor tag', function() {
         expect(directive.find('a').text())
+            .toEqual(DIR_ITEM.name);
+    });
+
+    it('* presents the file item in a div tag', function() {
+        expect(directive.find('div').text())
             .toEqual(FILE_ITEM.name);
+    });
+
+    it('* calls the action when the dir is clicked', function() {
+        var anchor = directive.find('a')[0];
+        $(anchor).click();
+        expect(scope.action).toHaveBeenCalledWith(DIR_ITEM);
     });
 
 
