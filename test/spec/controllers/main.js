@@ -42,10 +42,6 @@ describe('* Controller: AngularRepoCtrl', function () {
         });
     }));
 
-    it('should register to refresh content', function() {
-        expect(mockAngularRepo.refresh).toHaveBeenCalled();
-    });
-
     it('should populate repoContent with root contents', function () {
         expect(scope.repoContent).toBe(ROOT_CONTENTS);
     });
@@ -56,6 +52,10 @@ describe('* Controller: AngularRepoCtrl', function () {
 
         expect(item.contents).toHaveBeenCalled();
         expect(scope.repoContent).toBe(ITEM_CONTENTS);
+    });
+
+    it('should register to refresh content', function() {
+        expect(mockAngularRepo.refresh).toHaveBeenCalled();
     });
 
     it('should watch the repoContent value and increment a counter on each change', function() {
@@ -81,7 +81,7 @@ describe('Service: angularRepo', function() {
     var $httpBackend;
     var angularRepo;
     var mockTimeout;
-    var promises;
+    var $rootScope;
 
     // Helper function to wrap the logic of testing that raw
     // api content has been transformed to item objects
@@ -103,10 +103,10 @@ describe('Service: angularRepo', function() {
             });
             $provide.value('$timeout', mockTimeout);
         });
-        inject(function(_$httpBackend_, $rootScope, _angularRepo_) {
+        inject(function(_$httpBackend_, _$rootScope_, _angularRepo_) {
             $httpBackend = _$httpBackend_;
             angularRepo = _angularRepo_;
-            promises = $rootScope;
+            $rootScope = _$rootScope_;
         });
     });
 
@@ -154,6 +154,7 @@ describe('Service: angularRepo', function() {
     });
 
     describe('* repo contains file and dir type items', function() {
+
         describe('* file type item', function() {
             var FILE_RESPONSE = {
                 name: 'item_name',
@@ -174,12 +175,13 @@ describe('Service: angularRepo', function() {
             it('* contents returns a promise to empty array', function() {
                 var callback = jasmine.createSpy('callback');
                 item.contents().then(callback);
-                promises.$apply();
+                $rootScope.$apply();
                 expect(callback).toHaveBeenCalledWith([]);
             });
         });
 
         describe('* dir type item', function() {
+
             var DIR_RESPONSE = {
                 name: 'item_name',
                 type: 'dir',
